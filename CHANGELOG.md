@@ -3,6 +3,18 @@
 Todas as mudanças relevantes deste pacote, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 com versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+### Corrigido
+- **P0** `check-diff.sh`: `HEAD`/`--cached` agora comparam o INDEX (antes `HEAD...HEAD` vazio dava "OK" sempre); base inexistente ou igual a HEAD sai 2. Hook pre-commit usa `--cached`. Testes vermelhos plantados.
+- **P0** Template de CI: gatilho `workflow_dispatch` + `push: tags [hml-*, v*]`, `concurrency` com `cancel-in-progress`, base do diff = tag anterior; `ubuntu-24.04`, `@lhci/cli` por `npx` (devDependency pinada), cache do Playwright, `npm audit --omit=dev`.
+- **P1** `dangerouslySetInnerHTML`: só a âncora `sanitizado: <fn>` libera (comentário que cita DOMPurify não libera); gate de CSP/HSTS passa a olhar `proxy.ts` (Next 16).
+- Docs: removidos "preview/CI por PR" (testes, performance, ops, qualidade, operacao-deploy, web-ops, SKILL, CLAUDE); piso 20 (matriz de acesso, §48.8); `ops.md` §28.2 e `/web-ops`: artefato vem do git (SHA), `vercel --prebuilt` local só como exceção com ADR, IA não faz `ssh` mutável (pisos 22 a 24).
+- Versões (fonte: `endoflife.date/api/nodejs.json` e `/nextjs.json`, 2026-11-03): Node 26 LTS desde 2026-10-28; Next 15 EOL 2027-01-31, removido o "BLOQUEIO 21/10/2026" sem fonte.
+- Pisos 22–29 da `schematize-engineering` herdados por ponteiro em `SKILL.md` e `assets/CLAUDE.md` (o texto completo vem do sync de herdados).
+- `scripts/check-ci-triggers.sh` (+ teste) distribuído da engineering; `scripts/ci-template.test.sh` roda a regra sobre o template e o hook da própria skill.
+### Em espera `[~]`
+- Política "Node só frontend / BFF com banco em route handler" (P0-6), `server-only`/SSRF/§43.10 (P1-9), README, redução de SKILL.md: aguardam decisão.
+
 ## [1.19.0] — 2026-10-14
 Integração com `schematize-iam` e `schematize-analytics`; testes para os scripts que não tinham.
 

@@ -97,9 +97,13 @@ A malha de Q.A. inclui passos potencialmente custosos/destrutivos (e2e contra am
 
 ---
 
+### 48.8 Matriz de acesso por rota (piso 20)
+
+Todo route handler, server action e rota protegida **nasce** com teste de matriz de acesso: 4 personas (anônimo, não privilegiado, privilegiado, burlas: ID de outro tenant, método trocado, cookie/CSRF ausente), conferindo **status e corpo**. Deny-by-default e **M == N**: toda rota listada na matriz tem teste, e todo teste aponta para rota existente. Exemplo em Playwright (`request`): `expect((await request.get('/api/pedidos/42')).status()).toBe(401)` anônimo; 403 para não privilegiado; 200 para o dono; 404/403 para o ID de outro tenant. Disciplina em `schematize-qa`; ataque em `schematize-pentest`.
+
 ## Integração com CI (resumo)
 
-- **PR (rápido):** unit + componente + a11y (axe) + lint + typecheck + smoke self-check + Lighthouse CI (budget). Ver `assets/ci/github-actions-ci.yml`.
+- **Por commit (LOCAL, rápido):** unit + componente + a11y (axe) + lint + typecheck + `scripts/check-diff.sh --cached` no pre-commit. **CI remoto** (`workflow_dispatch` + tag `hml-*`/`v*`, piso 27) roda a suíte inteira UMA vez antes de promover: smoke self-check + Lighthouse CI (budget) + e2e. Ver `assets/ci/github-actions-ci.yml`; não existe check obrigatório em PR.
 - **Pré-deploy:** e2e (Playwright) + regressão visual.
 - **Pós-deploy:** smoke que prova conteúdo + CWV de campo confirmando o budget.
 - Bloqueio de merge: qualquer falha de a11y séria, CWV fora do budget, visual não aprovado, ou teste vermelho **trava**.

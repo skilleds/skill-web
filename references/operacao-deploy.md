@@ -29,7 +29,7 @@
 - **Build reprodutível:** lockfile commitado, versão de Node/ferramenta fixada
   (`.nvmrc`/`engines`/`rust-toolchain` no que aplica), build sem acesso a segredo
   de runtime que vaze pro artefato (§43.1).
-- **Preview deploy por PR** (ambiente efêmero) pra revisar visual, a11y e CWV
+- **Preview deploy por tag `hml-*` ou sob demanda** (ambiente efêmero; não por PR/commit, piso 27) pra revisar visual, a11y e CWV
   antes do merge — liga com regressão visual (§48.5).
 
 **SHOULD**

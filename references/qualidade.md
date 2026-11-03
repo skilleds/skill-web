@@ -95,7 +95,7 @@ Conteúdo mínimo (sem placeholder vazio): pergunta/objetivo, entendimento, deci
 > **Canônico em `references/ops.md`.** Aqui fica o recorte de processo que entra na DoD; o detalhe (precauções, artefato imutável, multi-app) está no reference.
 
 **MUST**
-- **Fluxo de promoção fixo, sem atalho:** toda mudança segue **dev local → teste local (verde) → GitHub (merge) → hml/preview → prd**. Nada pula etapa; nada vai direto pra hml/preview ou prd. Preview por PR (§54) é o "hml por mudança" — revisa visual/a11y/CWV **antes** do merge.
+- **Fluxo de promoção fixo, sem atalho:** toda mudança segue **dev local → teste local (verde) → GitHub (merge) → hml/preview → prd**. Nada pula etapa; nada vai direto pra hml/preview ou prd. O preview/hml (§54) sobe por tag `hml-*` (nunca por PR/commit, piso 27) e revisa visual/a11y/CWV **antes** do prd.
 - **Deploy/rollback/config passam pelo pipeline de CI/CD — a interface única.** Promoção entre ambientes e reversão são **um passo** operável pelo próprio usuário, **sem depender da IA**. Detalhe do deploy/CDN/rollback em `references/operacao-deploy.md` (§54–§58).
 
 **VETADO**

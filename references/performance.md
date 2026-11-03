@@ -77,7 +77,7 @@
 ### 45.8 Medição no CI
 
 **MUST**
-- **Lighthouse CI** (ou equivalente) roda no PR contra orçamentos de métrica e de recurso; **falha o build** quando estoura. Ver `assets/ci/github-actions-ci.yml`.
+- **Lighthouse CI** (ou equivalente) roda local e no CI da promoção (tag `hml-*`/`v*`, nunca por PR/commit: piso 27) contra orçamentos de métrica e de recurso; **falha o build** quando estoura. Ver `assets/ci/github-actions-ci.yml`.
 - **Lab + campo:** o Lighthouse (lab) pega regressão cedo; o RUM/Web Vitals de produção (§49) confirma o p75 real. Lab verde com campo vermelho = ainda reprova.
 - Budget de bundle verificado no build (tamanho por rota) — não só a métrica.
 
