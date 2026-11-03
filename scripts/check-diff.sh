@@ -14,10 +14,25 @@
 set -uo pipefail
 BASE="${1:-origin/main}"
 FAIL=0
+# Modo do diff. `HEAD`/`--cached` = commits em preparação (hook pré-commit): compara o INDEX com HEAD.
+# Antes o hook chamava `check-diff.sh HEAD` e o script fazia `git diff HEAD...HEAD` = vazio = "OK"
+# sempre (gate no-op no único ponto por commit; achado P0-5 da revisão de 2026-10-31).
+# Qualquer outro BASE compara BASE...HEAD; base inexistente ou igual a HEAD é entrada degenerada
+# (diff vazio por construção) e sai 2, nunca 0.
+MODE=range
+if [[ "$BASE" == "--cached" || "$BASE" == "HEAD" ]]; then
+  MODE=cached
+elif ! git rev-parse --verify -q "${BASE}^{commit}" >/dev/null 2>&1; then
+  echo "check-diff: base '$BASE' não existe (git fetch? use --cached no hook). Nada foi verificado." >&2; exit 2
+elif [[ "$(git rev-parse "$BASE^{commit}")" == "$(git rev-parse HEAD)" ]]; then
+  echo "check-diff: base '$BASE' == HEAD, diff vazio por construção. Nada foi verificado (use --cached ou outra base)." >&2; exit 2
+fi
+dn() { if [[ "$MODE" == cached ]]; then git diff --cached --name-only 2>/dev/null; else git diff --name-only "$BASE"...HEAD 2>/dev/null; fi; }
+dp() { if [[ "$MODE" == cached ]]; then git diff --cached -- "$@" 2>/dev/null; else git diff "$BASE"...HEAD -- "$@" 2>/dev/null; fi; }
 RED=$'\033[0;31m'; YLW=$'\033[0;33m'; GRN=$'\033[0;32m'; RST=$'\033[0m'
 
 # Arquivos de código de frontend alterados (exclui testes, gerados, migrations).
-mapfile -t FILES < <(git diff --name-only "$BASE"...HEAD 2>/dev/null \
+mapfile -t FILES < <(dn \
   | grep -E '\.(ts|tsx|js|mjs|cjs|jsx|astro|vue|svelte)$' \
   | grep -vE '(_test\.|\.test\.|\.spec\.|/__tests__/|/generated/|\.gen\.|/mocks?/|\.d\.ts$|/node_modules/)' || true)
 
@@ -102,7 +117,8 @@ danger_check() {
       local anterior=""
       (( ln > 1 )) && anterior=$(sed -n "$((ln-1))p" "$f")
       local atual; atual=$(sed -n "${ln}p" "$f")
-      if grep -qE 'sanitizado:|DOMPurify|sanitize-html|xss-clean' <<<"$anterior$atual"; then
+      # Só a âncora estruturada `sanitizado: <fn>` vale; mencionar DOMPurify em comentário NÃO libera.
+      if grep -qE 'sanitizado:[[:space:]]*[A-Za-z_]' <<<"$anterior$atual"; then
         warn "$f:$ln — dangerouslySetInnerHTML com sanitizador declarado; confirme no /web-review que o sanitizador roda ANTES e com allowlist (§43.4)"
       else
         block "$f:$ln — dangerouslySetInnerHTML SEM sanitizador declarado. Ou use texto, ou declare na linha: '-- sanitizado: DOMPurify.sanitize(...)' (§43.4/§37)"
@@ -146,29 +162,29 @@ scan '@next/next/no-img-element' 'silenciando next/image — use o componente de
 scan '\b(it|test|describe)\.(skip|only)\(|xit\(|xdescribe\(' 'teste pulado/only esquecido (§48/§37)'
 
 # 3) §43.3 — checagem de CSP/headers quando há config de framework no diff
-cfgchg=$(git diff --name-only "$BASE"...HEAD 2>/dev/null \
-  | grep -E '(next\.config\.(js|mjs|ts)|astro\.config\.(mjs|ts)|middleware\.(ts|js)|vercel\.json|netlify\.toml)$' || true)
+cfgchg=$(dn \
+  | grep -E '(next\.config\.(js|mjs|ts)|astro\.config\.(mjs|ts)|(middleware|proxy)\.(ts|js)|vercel\.json|netlify\.toml)$' || true)
 if [[ -n "$cfgchg" ]]; then
-  hassec=$(git diff "$BASE"...HEAD -- $cfgchg 2>/dev/null \
+  hassec=$(dp $cfgchg \
     | grep -iE 'content-security-policy|strict-transport-security|x-content-type-options' || true)
   [[ -z "$hassec" ]] && warn "config de framework alterada sem tocar em headers de segurança (CSP/HSTS) — confira (§43.3)"
 fi
 
 # 4) §46 — sitemap à mão (deve ser gerado)
-manual=$(git diff --name-only "$BASE"...HEAD 2>/dev/null | grep -E '(^|/)(public/)?sitemap\.xml$' || true)
+manual=$(dn | grep -E '(^|/)(public/)?sitemap\.xml$' || true)
 if [[ -n "$manual" ]]; then
-  gen=$(git diff --name-only "$BASE"...HEAD 2>/dev/null | grep -E 'gen-sitemap|sitemap\.(ts|js|mjs)$' || true)
+  gen=$(dn | grep -E 'gen-sitemap|sitemap\.(ts|js|mjs)$' || true)
   [[ -z "$gen" ]] && warn "sitemap.xml editado à mão sem o gerador no diff — sitemap deve ser autogerado (§46)"
 fi
 
 # 5) §39 — índice atualizado quando muda componente/funcionalidade
 if (( ${#FILES[@]} > 0 )); then
-  idx=$(git diff --name-only "$BASE"...HEAD 2>/dev/null | grep -E 'INDEX_(GLOBAL|COMPONENTS)\.md' || true)
+  idx=$(dn | grep -E 'INDEX_(GLOBAL|COMPONENTS)\.md' || true)
   [[ -z "$idx" ]] && warn "diff mexe em código mas não toca INDEX_*.md — índice atualizado? (§39)"
 fi
 
 # 6) §40 — backend disfarçado / linguagem fora de escopo
-back=$(git diff --name-only "$BASE"...HEAD 2>/dev/null | grep -E '\.(php)$' || true)
+back=$(dn | grep -E '\.(php)$' || true)
 [[ -n "$back" ]] && block "arquivo PHP no diff — fora de escopo; backend é Go/Rust no schematize-go (§40): $back"
 
 echo

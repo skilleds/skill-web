@@ -62,6 +62,29 @@ PY
 OUT="$( cd "$W" && bash quebrado.sh "$BASE" 2>&1 )"; z=$?
 if [ "$z" -ne 0 ] && grep -q 'grep saiu' <<<"$OUT"; then echo "  ✔ exit $z e 'grep saiu N' (erro nao vira passou)"; else echo "  ✖ engoliu o erro: $OUT"; rc=1; fi
 
+echo "── P0-5: hook pré-commit (BASE=HEAD) olha o INDEX, não HEAD...HEAD vazio"
+git -C "$W" -c user.email=t@t -c user.name=t commit -q --allow-empty -m limpa
+printf 'export const I = () => <img src="x">;\n' > "$W/src/staged.tsx"
+git -C "$W" add src/staged.tsx
+OUT="$(roda HEAD)"; z=$?
+if [ "$z" -ne 0 ] && grep -q 'img sem alt' <<<"$OUT"; then echo "  ✔ staged violador bloqueado (exit $z)"; else echo "  ✖ hook no-op: $OUT"; rc=1; fi
+git -C "$W" reset -q; rm -f "$W/src/staged.tsx"
+OUT="$(roda HEAD)"; z=$?
+if [ "$z" -eq 0 ]; then echo "  ✔ nada staged = ok"; else echo "  ✖ $z $OUT"; rc=1; fi
+
+echo "── P0-5: base == HEAD ou base inexistente = exit 2 (nunca verde por diff vazio)"
+roda "$(git -C "$W" rev-parse HEAD)" >/dev/null; z=$?
+if [ "$z" -eq 2 ]; then echo "  ✔ base==HEAD sai 2"; else echo "  ✖ saiu $z"; rc=1; fi
+roda origin/nao-existe >/dev/null; z=$?
+if [ "$z" -eq 2 ]; then echo "  ✔ base inexistente sai 2"; else echo "  ✖ saiu $z"; rc=1; fi
+
+echo "── P1-10: comentário que só MENCIONA DOMPurify não libera dangerouslySetInnerHTML"
+B2=$(git -C "$W" rev-parse HEAD)
+printf '// sem DOMPurify aqui\nexport const D = () => <div dangerouslySetInnerHTML={{__html: raw}} />;\n' > "$W/src/d.tsx"
+git -C "$W" add -A && git -C "$W" -c user.email=t@t -c user.name=t commit -q -m enganoso
+OUT="$(roda "$B2")"; z=$?
+if [ "$z" -ne 0 ] && grep -q 'SEM sanitizador declarado' <<<"$OUT"; then echo "  ✔ bloqueou"; else echo "  ✖ passou: $OUT"; rc=1; fi
+
 echo
 [ $rc -eq 0 ] && echo "✔ check-diff.test.sh: todos os casos" || echo "✖ check-diff.test.sh: falhou"
 exit $rc
