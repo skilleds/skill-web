@@ -3,7 +3,7 @@
 Todas as mudanças relevantes deste pacote, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 com versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [1.20.0] — 2026-11-03
 ### Corrigido
 - **P0** `check-diff.sh`: `HEAD`/`--cached` agora comparam o INDEX (antes `HEAD...HEAD` vazio dava "OK" sempre); base inexistente ou igual a HEAD sai 2. Hook pre-commit usa `--cached`. Testes vermelhos plantados.
 - **P0** Template de CI: gatilho `workflow_dispatch` + `push: tags [hml-*, v*]`, `concurrency` com `cancel-in-progress`, base do diff = tag anterior; `ubuntu-24.04`, `@lhci/cli` por `npx` (devDependency pinada), cache do Playwright, `npm audit --omit=dev`.
